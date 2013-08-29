@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:fb="https://www.facebook.com/2008/fbml">
+    <head>
+        <meta charset="utf-8" />
+        <title>Hachi assignment</title>
+        <link href="css/main.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="http://platform.linkedin.com/in.js">
+		  api_key: 94yth0db9kaf
+		  onLoad: onLinkedInLoad
+		  authorize: true
+		</script>
+    </head>
+    <body>
+        <img src="facebook.png" class="facebook" alt="facebook" />
+
+        <div id="facebookUsers">
+            <div id="user-info"></div>
+            <button id="fb-auth">Please login here</button>
+        </div>
+
+        <div id="result_friends"></div>
+		<div id="fb-root"></div>
+		<img src="linkedIn.png" class="linkedIn" alt="linkedIn" />
+
+        <div id="linkedInUsers">
+            <script type="IN/Login"></script>
+			<button id="linkedIn-auth" onclick="logoutLinkedIn()" style="display:none">Logout</button>
+        </div>
+
+        <div id="result_friends_linkedIn"></div>
+		<button id="commonFriendsButton" onclick="getCommonFriends()"> Get Common Friends/Connections</button>
+		<div id="common_friends"></div>
+        <script>
+		var sApplicationId = '205217622971402';
+		var sApplicationSecret = 'ce254fb8d5c1c17322a6b7024f846a8b';
+        window.fbAsyncInit = function() {
+            FB.init({ appId: 205217622971402, 
+                status: true, 
+                cookie: true,
+                xfbml: true,
+                oauth: true
+            });
+
+            function updateButton(response) {
+                var button = document.getElementById('fb-auth');
+
+                if (response.authResponse) { // in case if we are logged in
+                    var userInfo = document.getElementById('user-info');
+                    FB.api('/me', function(response) {
+                        userInfo.innerHTML = '<img src="https://graph.facebook.com/' + response.id + '/picture">' + response.name;
+                        button.innerHTML = 'Logout';
+                    });
+
+                    // get friends
+                    FB.api('/me/friends', function(response) {
+                        var result_holder = document.getElementById('result_friends');
+                        var friend_data = response.data;
+
+                        var results = '';
+                        for (var i = 0; i < friend_data.length; i++) {
+                            results += friend_data[i].name +',';
+                        }
+
+                        // and display them at our holder element
+                        result_holder.innerHTML = results;
+                    });
+
+                    button.onclick = function() {
+                        FB.logout(function(response) {
+                            window.location.reload();
+                        });
+                    };
+                } else { // otherwise - dispay login button
+                    button.onclick = function() {
+                        FB.login(function(response) {
+                            if (response.authResponse) {
+                                window.location.reload();
+                            }
+                        }, {scope:'email'});
+                    }
+                }
+            }
+
+            // run once with current status and whenever the status changes
+            FB.getLoginStatus(updateButton);
+            FB.Event.subscribe('auth.statusChange', updateButton);    
+        };
+            
+        (function() {
+            var e = document.createElement('script'); e.async = true;
+            e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+            document.getElementById('fb-root').appendChild(e);
+        }());
+		
+		//for linkedIn
+		
+		function onLinkedInLoad() {
+		     IN.Event.on(IN, "auth", onLinkedInAuth);
+		}
+		
+		function onLinkedInAuth() {
+			document.getElementById("linkedIn-auth").style.display="block";
+		     IN.API.Connections("me")
+			    .fields("firstName", "lastName", "industry")
+			    .result(displayConnections)
+			    .error(displayConnectionsErrors);
+		}
+		
+		function displayConnections(connections) {
+		  var connectionsDiv = document.getElementById("result_friends_linkedIn");
+
+		  var members = connections.values; // The list of members you are connected to
+		  for (var member in members) {
+		    connectionsDiv.innerHTML += members[member].firstName + " " + members[member].lastName+",";
+		  }     
+		}
+		
+		function logoutLinkedIn() { 
+		   IN.Event.on(IN,'logout', function() {
+             window.location.href = [site-logout-url];
+		});
+		document.getElementById("result_friends_linkedIn").innerHTML="";
+		document.getElementById("linkedIn-auth").style.display="none";
+	    IN.User.logout();}
+		
+		function displayConnectionsErrors(error) { /* do nothing */ }
+		
+		//logic for getting common friends
+		
+		function getCommonFriends(){
+			var facebookFriends = document.getElementById("result_friends").innerHTML.split(",");
+			var linkedInFriends = document.getElementById("result_friends_linkedIn").innerHTML.split(",");
+			var commonFriends="";
+			if(facebookFriends.length >= linkedInFriends.length){
+				for(var i=0;i<linkedInFriends.length;i++){
+					for(var j=0; j<facebookFriends.length; j++){
+				        if(linkedInFriends[i] === facebookFriends[j]){
+				            commonFriends+=linkedInFriends[i]+",";
+							facebookFriends.splice(j, 1);
+							break;
+				        }
+				    }
+				}
+			}
+			else{
+				for(var i=0;i<facebookFriends.length;i++){
+					for(var j=0; j<linkedInFriends.length; j++){
+				        if(facebookFriends[i] === linkedInFriends[j]){
+				            commonFriends+=facebookFriends[i]+",";
+							linkedInFriends.splice(j, 1);
+							break;
+				        }
+				    }
+				}
+			}
+			document.getElementById("common_friends").innerHTML= commonFriends;
+		}
+		
+        </script>
+
+</body>
+</html>
